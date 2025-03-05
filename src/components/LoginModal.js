@@ -1,6 +1,8 @@
 "use client";
 
-export default function LoginModal({ showLogin, setShowLogin, handleLoginChange, loginForm }) {
+import LogoutButton from "./LogoutButton";
+
+export default function LoginModal({ showLogin, setShowLogin, handleLoginChange, loginForm, errorLogs }) {
   if (!showLogin) return null; // Hide modal if showLogin is false
 
   return (
@@ -23,6 +25,9 @@ export default function LoginModal({ showLogin, setShowLogin, handleLoginChange,
           onChange={handleLoginChange}
           value={loginForm.password}
         />
+        {
+          errorLogs != '' && <p className="text-red-500">{errorLogs}</p>
+        }
         <button className="bg-blue-800 text-white py-2 w-full rounded-lg">Login</button>
         <p className="text-sm text-center mt-2 text-blue-500 cursor-pointer">Forgot Password?</p>
         <button onClick={() => setShowLogin(false)} className="mt-4 text-red-500 w-full">Close</button>

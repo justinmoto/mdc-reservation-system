@@ -1,12 +1,12 @@
 "use client";
 
-export default function SignupModal({ showSignup, setShowSignup, handleSignupChange, signupForm }) {
+export default function SignupModal({ showSignup, setShowSignup, handleSignupChange, signupForm, errorLogs }) {
   if (!showSignup) return null; // Hide modal if showSignup is false
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-lg shadow-md w-1/3">
-        <h2 className="text-lg font-bold mb-4">Sign Up</h2>
+        <h2 className="text-lg font-bold mb-4 text-black">Sign Up</h2>
         
         <input
           type="text"
@@ -52,7 +52,9 @@ export default function SignupModal({ showSignup, setShowSignup, handleSignupCha
           onChange={handleSignupChange}
           value={signupForm.confirmPassword}
         />
-
+    {
+          errorLogs != '' && <p className="text-red-500">{errorLogs}</p>
+        }
         <button className="bg-green-600 text-white py-2 w-full rounded-lg">Sign Up</button>
         
         <button onClick={() => setShowSignup(false)} className="mt-4 text-red-500 w-full">Close</button>
