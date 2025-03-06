@@ -11,13 +11,9 @@ const port = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Database connection
-const db = mysql.createPool({
-  host: 'localhost',
-  user: 'root',  
-  password: 'zedmain1525',
-  database: 'my_database',
 
+const db = mysql.createPool({
+    //add connection nalang dito
 });
 
 // Log database connection parameters
