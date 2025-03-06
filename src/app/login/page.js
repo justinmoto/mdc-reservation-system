@@ -9,14 +9,14 @@ export default function LoginPage() {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [errorLogs, setErrorLogs] = useState('');
 
-  useEffect(() => {
-    const userToken = localStorage.getItem("userToken");
-    if (userToken) {
-      // If token exists, you can either redirect or skip the login
-      alert("You are already logged in.");
-      // Redirect user or show a different UI
-    }
-  }, []);
+  // useEffect(() => {
+  //   const userToken = localStorage.getItem("userToken");
+  //   if (userToken) {
+  //     // If token exists, you can either redirect or skip the login
+  //     alert("You are already logged in.");
+  //     // Redirect user or show a different UI
+  //   }
+  // }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("userToken");

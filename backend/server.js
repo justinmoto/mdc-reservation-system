@@ -13,10 +13,11 @@ app.use(bodyParser.json());
 
 // Database connection
 const db = mysql.createPool({
-  //
-  //
-  //
-  //
+  host: 'localhost',
+  user: 'root',  
+  password: 'zedmain1525',
+  database: 'my_database',
+
 });
 
 // Log database connection parameters
@@ -148,15 +149,39 @@ app.post("/api/ban", (req, res) => {
 
 // Booking requests
 app.post("/api/requests", (req, res) => {
-  const { name, position, batch, booking_date, start_time, end_time, room, specificRequest } = req.body;
+  const { name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId} = req.body;
 
 
-  console.log(name, position, batch, booking_date, start_time, end_time, room, specificRequest);
+  console.log(name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId);
 
-  db.query("INSERT INTO requests (name, position, batch, booking_date, start_time, end_time, room) VALUES (?, ?, ?, ?, ?, ?, ?)", 
-  [name, position, batch, booking_date, start_time, end_time, room], (err, result) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.status(201).json({ message: "Booking request submitted!" });
+  
+  db.query(
+    "INSERT INTO requests (name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId],
+    (err, results) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.status(201).json({ message: "Request created successfully!" });
+    }
+  );
+});
+
+
+//get request by userId
+app.get("/api/requests/:userId", (req, res) => {
+  const { userId } = req.params;
+
+  if (!userId) {
+    return res.status(400).json({ error: "User ID is required" });
+  }
+
+  const sql = "SELECT * FROM requests WHERE userId = ?";
+  db.query(sql, [userId], (err, results) => {
+    if (err) {
+      console.error("Error fetching requests:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    res.json(results);
   });
 });
 
@@ -168,6 +193,122 @@ app.get("/api/requests", (req, res) => {
     res.status(200).json(results);
   });
 });
+
+
+//delete request by user, using userid and id of the request
+app.delete("/api/requests/:userId/:id", (req, res) => {
+  const { userId, id } = req.params;
+
+  if (!userId || !id) {
+    return res.status(400).json({ error: "User ID and Request ID are required" });
+  }
+
+  const sql = "DELETE FROM requests WHERE userId = ? AND id = ?";
+  db.query(sql, [userId, id], (err, results) => {
+    if (err) {
+      console.error("Error deleting request:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Request not found!" });
+    }
+
+    res.json({ message: "Request deleted successfully!" });
+  });
+});
+
+
+//edit user request
+app.put("/api/requests/:userId/:id", (req, res) => {
+  const { userId, id } = req.params;
+  const updates = req.body; // Contains only fields that were modified
+
+  if (!userId || !id) {
+    return res.status(400).json({ error: "User ID and Request ID are required" });
+  }
+
+  // Filter out unchanged fields
+  const fields = Object.keys(updates).filter((key) => updates[key] !== undefined && updates[key] !== "");
+
+  if (fields.length === 0) {
+    return res.status(400).json({ error: "No fields to update" });
+  }
+
+  // Construct the dynamic SQL query
+  const setClause = fields.map((field) => `${field} = ?`).join(", ");
+  const values = fields.map((field) => updates[field]);
+
+  // Add userId and id for the WHERE clause
+  values.push(userId, id);
+
+  const sql = `UPDATE requests SET ${setClause} WHERE userId = ? AND id = ?`;
+
+  db.query(sql, values, (err, results) => {
+    if (err) {
+      console.error("Error updating request:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Request not found!" });
+    }
+
+    res.json({ message: "Request updated successfully!", updatedFields: fields });
+  });
+});
+
+
+
+//approve a request
+app.put("/api/approve/:id", (req, res) => {
+  const { id } = req.params;
+
+  if (!id) {
+    return res.status(400).json({ error: "Request ID is required" });
+  }
+
+  const sql = "UPDATE requests SET status = 'approved' WHERE id = ?";
+  db.query(sql, [id], (err, results) => {
+    if (err) {
+      console.error("Error approving request:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Request not found!" });
+    }
+
+    res.json({ message: "Request approved successfully!" });
+  });
+})
+
+
+
+// curl -X PUT http://localhost:5000/api/reject/7 \ -H "Content-Type: application/json" \-d '{"rejectionDesc": "Request does not meet the criteria."}'
+//reject a request with reason
+app.put("/api/reject/:id", (req, res) => {
+  const { id } = req.params;
+  const { rejectionDesc } = req.body;
+
+  if (!id) {
+    return res.status(400).json({ error: "Request ID is required" });
+  }
+
+  const sql = "UPDATE requests SET status = 'rejected', rejectionDesc = ? WHERE id = ?";
+  db.query(sql, [rejectionDesc, id], (err, results) => {
+    if (err) {
+      console.error("Error rejecting request:", err);
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+
+    if (results.affectedRows === 0) {
+      return res.status(404).json({ message: "Request not found!" });
+    }
+
+    res.json({ message: "Request rejected successfully!" });
+  });
+})
 
 // Start server
 app.listen(port, () => {
