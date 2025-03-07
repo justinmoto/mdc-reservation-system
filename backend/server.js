@@ -16,7 +16,7 @@ const db = mysql.createPool({
     //add connection nalang dito
 });
 
-// Log database connection parameters
+ 
 console.log("DB_HOST:", process.env.DB_HOST);
 console.log("DB_USER:", process.env.DB_USER);
 console.log("DB_NAME:", process.env.DB_NAME);
@@ -28,24 +28,18 @@ app.get("/", (req, res) => {
   res.send("Hello from the server!");
 });
 
-// User signup
+
 app.post("/api/signup", (req, res) => {
   const { fullName, email, password, phonenumber } = req.body;
-
-  // Validate input fields
   if (!fullName || !email || !password || !phonenumber) {
     return res.status(400).json({ error: "All fields are required" });
   }
-
-  // Check if the email already exists
   db.query("SELECT * FROM users WHERE email = ?", [email], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
 
     if (results.length > 0) {
       return res.status(400).json({ error: "Email already exists" });
     }
-
-    // Insert new user if email is not found
     db.query(
       "INSERT INTO users (fullName, email, password, phonenumber, isBanned) VALUES (?, ?, ?, ?, ?)", 
       [fullName, email, password, phonenumber, false], 
@@ -57,7 +51,6 @@ app.post("/api/signup", (req, res) => {
   });
 });
 
-//get all users 
 app.get("/api/users", (req, res) => {
   db.query("SELECT * FROM users", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -66,55 +59,45 @@ app.get("/api/users", (req, res) => {
 });
 
 
-
-// User login
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
   db.query("SELECT * FROM users WHERE email = ? AND password = ?", [email, password], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     
-    // If user is found
     if (results.length > 0) {
       // Create a token (JWT) that expires in 1 hour
       const token = jwt.sign({ email: results[0].email, userId: results[0].id }, 'your-secret-key', { expiresIn: '1h' });
-
-      // Send back the token
       res.status(200).json({
         message: "Login successful!",
-        token: token,  // Include the token in the response
+        token: token, 
       });
     } else {
-      // Invalid credentials
       res.status(401).json({ message: "Invalid credentials!" });
     }
   });
 });
 
 
-// Get user details
 app.get("/api/user", (req, res) => {
-  const token = req.headers.authorization?.split(" ")[1]; // Get token from Authorization header
+  const token = req.headers.authorization?.split(" ")[1]; 
 
   if (!token) {
     return res.status(401).json({ message: "No token provided" });
   }
 
-  // Verify token
   jwt.verify(token, 'your-secret-key', (err, decoded) => {
     if (err) {
       return res.status(403).json({ message: "Invalid token" });
     }
 
-    // Query database to get user details based on user ID from the token
     const userId = decoded.userId;
     db.query("SELECT * FROM users WHERE id = ?", [userId], (err, results) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-
       if (results.length > 0) {
-        res.status(200).json({ user: results[0] }); // Return user details
+        res.status(200).json({ user: results[0] }); 
       } else {
         res.status(404).json({ message: "User not found" });
       }
@@ -143,14 +126,8 @@ app.post("/api/ban", (req, res) => {
 
 
 
-// Booking requests
 app.post("/api/requests", (req, res) => {
   const { name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId} = req.body;
-
-
-  console.log(name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId);
-
-  
   db.query(
     "INSERT INTO requests (name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [name, position, batch, booking_date, start_time, end_time, room, specificRequest, userId],
@@ -162,7 +139,6 @@ app.post("/api/requests", (req, res) => {
 });
 
 
-//get request by userId
 app.get("/api/requests/:userId", (req, res) => {
   const { userId } = req.params;
 
@@ -182,7 +158,6 @@ app.get("/api/requests/:userId", (req, res) => {
 });
 
 
-//get all requests
 app.get("/api/requests", (req, res) => {
   db.query("SELECT * FROM requests", (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -190,8 +165,6 @@ app.get("/api/requests", (req, res) => {
   });
 });
 
-
-//delete request by user, using userid and id of the request
 app.delete("/api/requests/:userId/:id", (req, res) => {
   const { userId, id } = req.params;
 
@@ -215,27 +188,24 @@ app.delete("/api/requests/:userId/:id", (req, res) => {
 });
 
 
-//edit user request
+
 app.put("/api/requests/:userId/:id", (req, res) => {
   const { userId, id } = req.params;
-  const updates = req.body; // Contains only fields that were modified
+  const updates = req.body; 
 
   if (!userId || !id) {
     return res.status(400).json({ error: "User ID and Request ID are required" });
   }
 
-  // Filter out unchanged fields
   const fields = Object.keys(updates).filter((key) => updates[key] !== undefined && updates[key] !== "");
 
   if (fields.length === 0) {
     return res.status(400).json({ error: "No fields to update" });
   }
 
-  // Construct the dynamic SQL query
   const setClause = fields.map((field) => `${field} = ?`).join(", ");
   const values = fields.map((field) => updates[field]);
 
-  // Add userId and id for the WHERE clause
   values.push(userId, id);
 
   const sql = `UPDATE requests SET ${setClause} WHERE userId = ? AND id = ?`;
@@ -255,8 +225,6 @@ app.put("/api/requests/:userId/:id", (req, res) => {
 });
 
 
-
-//approve a request
 app.put("/api/approve/:id", (req, res) => {
   const { id } = req.params;
 
@@ -282,7 +250,7 @@ app.put("/api/approve/:id", (req, res) => {
 
 
 // curl -X PUT http://localhost:5000/api/reject/7 \ -H "Content-Type: application/json" \-d '{"rejectionDesc": "Request does not meet the criteria."}'
-//reject a request with reason
+
 app.put("/api/reject/:id", (req, res) => {
   const { id } = req.params;
   const { rejectionDesc } = req.body;
@@ -290,7 +258,6 @@ app.put("/api/reject/:id", (req, res) => {
   if (!id) {
     return res.status(400).json({ error: "Request ID is required" });
   }
-
   const sql = "UPDATE requests SET status = 'rejected', rejectionDesc = ? WHERE id = ?";
   db.query(sql, [rejectionDesc, id], (err, results) => {
     if (err) {
@@ -306,7 +273,6 @@ app.put("/api/reject/:id", (req, res) => {
   });
 })
 
-// Start server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
