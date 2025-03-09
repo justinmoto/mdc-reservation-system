@@ -3,7 +3,7 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const jwt = require('jsonwebtoken');  // Import jsonwebtoken
+const jwt = require('jsonwebtoken');  
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -23,7 +23,6 @@ console.log("DB_NAME:", process.env.DB_NAME);
 
 
 
-// test 
 app.get("/", (req, res) => {
   res.send("Hello from the server!");
 });
@@ -66,7 +65,6 @@ app.post("/api/login", (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     
     if (results.length > 0) {
-      // Create a token (JWT) that expires in 1 hour
       const token = jwt.sign({ email: results[0].email, userId: results[0].id }, 'your-secret-key', { expiresIn: '1h' });
       res.status(200).json({
         message: "Login successful!",
