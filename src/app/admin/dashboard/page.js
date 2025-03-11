@@ -237,15 +237,29 @@ const page = () => {
     }
 
 
+    const handleLogout = () => {
+        localStorage.removeItem("adminSession");
+        window.location.href = "http://localhost:3000/admin";
+    };
+
     return (
         <div className='w-full h-screen bg-white  overflow-auto pb-5'>
             <div className='p-5 bg-white z-50 relative h-screen text-black mx-auto max-w-[1200px]'>
-                <div className='mb-5 border-b-[1px] pb-5'>
-                    <h1 className='text-2xl font-bold'>
+                <div className='mb-5 border-b-[1px] pb-5 flex gap-5 items-center justify-between'>
+                  <div>
+                  <h1 className='text-2xl font-bold'>
                         Welcome back, Admin!</h1>
                     <p>
                         You can manage your users, requests, and other admin-related tasks here.
                     </p>
+                  </div>
+
+
+                  <div 
+                  onClick={handleLogout}
+                  className='bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700 cursor-pointer'>
+                    Log out
+                  </div>
 
                 </div>
 
