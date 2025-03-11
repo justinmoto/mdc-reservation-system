@@ -38,7 +38,7 @@ export default function LoginPage() {
           const data = await response.json();
           console.log(data); // Handle user details
         } catch (error) {
-          setError(error.message); // Handle error
+          setErrorLogs(error.message); // Handle error
         }
       };
 

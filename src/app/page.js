@@ -563,7 +563,7 @@ export default function Home() {
                       </td>
                       <td className="border border-gray-300 p-2 flex gap-2">
                       {
-                          index !== editIndex && (
+                          index !== editIndex && booking.status != "approved" &&  (
                             <button onClick={() =>  handleEdit(index)  } className="bg-yellow-500 text-white px-2 py-1 rounded-lg">Edit</button>
                           )
                         }

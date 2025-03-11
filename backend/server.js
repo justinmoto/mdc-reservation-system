@@ -13,7 +13,10 @@ app.use(bodyParser.json());
 
 
 const db = mysql.createPool({
-    //add connection nalang dito
+  host: "localhost",
+  user: "root",
+  password: "zedmain1525",
+  database: "my_database",
 });
 
  
@@ -105,11 +108,15 @@ app.get("/api/user", (req, res) => {
 
 
 app.post("/api/ban", (req, res) => {
-  const { email, banDescription } = req.body;
+  const { id, banDescription } = req.body;
+
+  if (!id || !banDescription) {
+    return res.status(400).json({ error: "Missing id or banDescription" });
+  }
 
   db.query(
-    "UPDATE users SET isBanned = ?, banDescription = ? WHERE email = ?",
-    [true, banDescription, email],
+    "UPDATE users SET isBanned = ?, banDescription = ? WHERE id = ?",
+    [1, banDescription, id],
     (err, results) => {
       if (err) return res.status(500).json({ error: err.message });
 
@@ -121,6 +128,25 @@ app.post("/api/ban", (req, res) => {
     }
   );
 });
+
+app.post("/api/unban", (req, res) => {
+  const { id } = req.body;
+
+  db.query(
+      "UPDATE users SET isBanned = 0, banDescription = NULL WHERE id = ?",
+      [id],
+      (err, results) => {
+          if (err) return res.status(500).json({ error: err.message });
+
+          if (results.affectedRows === 0) {
+              return res.status(404).json({ message: "User not found!" });
+          }
+
+          res.status(200).json({ message: "User unbanned successfully!" });
+      }
+  );
+});
+
 
 
 

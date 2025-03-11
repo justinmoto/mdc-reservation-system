@@ -1,115 +1,391 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router"; // Importing useRouter
-import { User } from 'some-icon-library'; // Ensure to replace with the actual import path for the User icon
+import Description from '@/components/Description';
+import React, { useEffect, useState } from 'react'
 
-export default function AdminPage() {
-  const [dropdownVisible, setDropdownVisible] = useState(false);
+const page = () => {
+  const [errorLogs, setErrorLogs] = useState('');
+  const [accounts, setAccounts] = useState([]);
   const [requests, setRequests] = useState([]);
-const [errorMessage, setErrorMessage] = useState(""); // State for error messages
 
-  const router = useRouter(); // Defining router
+  const fetchUserDetails = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/users", {
+        method: "GET",
+      });
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+      if (!response.ok) {
+        throw new Error("Failed to fetch user details");
+      }
+
+      const data = await response.json();
+      console.log(data); // Handle user details
+      setAccounts(data);
+    } catch (error) {
+      setErrorLogs(error.message); // Handle error
+    }
+  }
 
   const fetchRequests = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/requests");
-      if (!res.ok) throw new Error("Failed to fetch requests");
-      const data = await res.json();
+      const response = await fetch("http://localhost:5000/api/requests", {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch requests");
+      }
+
+      const data = await response.json();
+      console.log(data); // Handle requests
       setRequests(data);
     } catch (error) {
-      console.error("Error fetching requests:", error);
-      setErrorMessage("Failed to load requests. Please try again later."); // Set error message
+      setErrorLogs(error.message); // Handle error
     }
+  }
+
+
+
+  useEffect(() => {
+
+    fetchUserDetails();
+    fetchRequests();
+
+  }, []);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+
+
+
+  const handleBanClick = (userId) => {
+    setSelectedUser(userId);
+    setIsModalOpen(true);
   };
 
-  const handleLogout = () => {
-    console.log("User logged out");
-    // Example: localStorage.removeItem('user');
-    // window.location.href = '/login';
-  };
-
-  const handleAction = async (id, status) => {
+  const handleBanSubmit = async (banDescription) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/requests/${id}`, {
-        method: "PUT",
+      const response = await fetch("http://localhost:5000/api/ban", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({
+          id: selectedUser,
+          banDescription: banDescription
+        }),
       });
 
-      if (!res.ok) throw new Error("Failed to update request");
+      const data = await response.json();
 
-      // Update UI
-      setRequests(requests.filter((req) => req.id !== id));
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to ban user");
+      }
+
+      alert("User banned successfully!");
+      console.log(data);
+
+
+      // Update the accounts list
+      const updatedAccounts = accounts.map((account) => {
+        if (account.id === selectedUser) {
+          return { ...account, isBanned: 1 };
+        }
+        return account;
+      });
+
+      setAccounts(updatedAccounts);
+
+
+      setIsModalOpen(false);
+      setSelectedUser(null);
+
     } catch (error) {
-      console.error("Error updating request:", error);
-      setErrorMessage("Failed to update request. Please try again."); // Set error message
+      console.error("Error banning user:", error.message);
+      alert("Error: " + error.message);
     }
   };
 
+
+  async function unbanUser(userId) {
+    try {
+      const response = await fetch("http://localhost:5000/api/unban", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: userId
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to unban user");
+      }
+
+      alert("User unbanned successfully!");
+      console.log(data);
+
+      // Update the accounts list
+      const updatedAccounts = accounts.map((account) => {
+        if (account.id === userId) {
+          return { ...account, isBanned: 0 };
+        }
+        return account;
+      }
+      );
+
+      setAccounts(updatedAccounts);
+
+    } catch (error) {
+      console.error("Error unbanning user:", error.message);
+      alert("Error: " + error.message);
+    }
+  }
+
+
+
+  async function approveRequest(id) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/approve/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const result = await response.json();
+      alert(result.message);
+      fetchRequests();
+
+      // Update the requests list
+      const updatedRequests = requests.map((req) => {
+        if (req.id === id) {
+          return { ...req, status: "approved" };
+        }
+        return req;
+      });
+
+      setRequests(updatedRequests);
+    } catch (error) {
+      console.error("Error approving request:", error);
+    }
+  }
+
+
+  const [isRejectOpen, setIsRejectOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
+
+  const handleRejectClick = (reqId) => {
+    setSelectedRequest(reqId);
+    setIsRejectOpen(true);
+  }
+
+  async function rejectRequest(rejectionDesc) {
+
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/reject/${selectedRequest}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rejectionDesc: rejectionDesc
+        }),
+      });
+
+      const result = await response.json();
+      alert(result.message);
+      fetchRequests(); // Refresh list
+
+      // Update the requests list
+      const updatedRequests = requests.map((req) => {
+        if (req.id === selectedRequest) {
+          return { ...req, status: "rejected" };
+        }
+        return req;
+      });
+
+      setIsRejectOpen(false);
+      setSelectedRequest(null);
+      setRequests(updatedRequests);
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+    }
+  }
+
+
   return (
-    <div className="p-6 relative">
-      <div className="absolute top-4 right-4">
-        <button 
-          onClick={() => setDropdownVisible(!dropdownVisible)} // Toggle dropdown visibility
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-600 bg-yellow-500 text-black">
-          <User className="w-6 h-6" /> {/* Profile Icon */}
-        </button>
-        {dropdownVisible && (
-          <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg">
-            <div className="p-2">
-              <p>Username: {/* Display username here */}</p>
-              <button onClick={handleLogout} className="w-full text-left p-2 hover:bg-gray-200">Logout</button>
-            </div>
+    <div className='w-full h-screen bg-white  overflow-auto pb-5'>
+      <div className='p-5 bg-white z-50 relative h-screen text-black mx-auto max-w-[1200px]'>
+        <div className='mb-5 border-b-[1px] pb-5'>
+          <h1 className='text-2xl font-bold'>
+            Welcome back, Admin!</h1>
+          <p>
+            You can manage your users, requests, and other admin-related tasks here.
+          </p>
+
+        </div>
+
+        <div className='mt-5'>
+          <h1 className='text-xl font-bold mt-8 mb-4'>
+            Users List
+          </h1>
+          <div className="w-full overflow-auto max-h-[400px] border border-gray-700 rounded-lg relative">
+            <table className="w-full bg-black text-white border-collapse">
+              <thead className="bg-gray-900 sticky top-0">
+                <tr className="text-left">
+                  <th className="p-3 border-b border-gray-700">ID</th>
+                  <th className="p-3 border-b border-gray-700">Name</th>
+                  <th className="p-3 border-b border-gray-700">Email</th>
+                  <th className="p-3 border-b border-gray-700">Phone Number</th>
+                  <th className="p-3 border-b border-gray-700">Status</th>
+                  <th className="p-3 border-b border-gray-700">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!accounts.length && (
+                  <tr>
+                    <td colSpan={6} className="text-center p-5 border-b border-gray-700">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+                {accounts.reverse().map((account, index) => (
+                  <tr key={index} className="hover:bg-gray-800">
+                    <td className="p-3 border-b border-gray-700">{account.id}</td>
+                    <td className="p-3 border-b border-gray-700">{account.fullName}</td>
+                    <td className="p-3 border-b border-gray-700">{account.email}</td>
+                    <td className="p-3 border-b border-gray-700">{account.phonenumber}</td>
+                    <td className="p-3 border-b border-gray-700">
+                      {account.isBanned === 0 ? "Active" : "Banned"}
+                    </td>
+                    <td className="p-3 border-b border-gray-700">
+                      {account.isBanned === 0 ? (
+                        <button
+                          onClick={() => handleBanClick(account.id)}
+                          className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700">
+                          Ban
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => unbanUser(account.id)}
+                          className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700">
+                          Unban
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+
+            </table>
           </div>
-        )}
+
+          {
+            isModalOpen && (
+              <Description
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleBanSubmit}
+                type="Ban"
+              />
+            )
+          }
+        </div>
+
+
+        <div className='mt-7 border-t-[1px] pt-5'>
+          <h1 className='text-xl font-bold mt-8 mb-4'>
+            Requests List
+          </h1>
+
+          <div className="w-full overflow-auto max-h-[400px] border border-gray-700 rounded-lg">
+            <table className="w-full bg-black text-white border-collapse relative z-0">
+              <thead className="bg-gray-900 sticky top-0">
+                <tr className="text-left">
+                  <th className="p-3 border-b border-gray-700">ID</th>
+                  <th className="p-3 border-b border-gray-700">Name</th>
+                  <th className="p-3 border-b border-gray-700">Position</th>
+                  <th className="p-3 border-b border-gray-700">Batch</th>
+                  <th className="p-3 border-b border-gray-700">Booking Date</th>
+                  <th className="p-3 border-b border-gray-700">Time</th>
+                  <th className="p-3 border-b border-gray-700">Room</th>
+                  <th className="p-3 border-b border-gray-700">Request</th>
+                  <th className="p-3 border-b border-gray-700">Status</th>
+                  <th className="p-3 border-b border-gray-700">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!requests.length && (
+                  <tr>
+                    <td colSpan={10} className="text-center p-5 border-b border-gray-700">
+                      No requests found
+                    </td>
+                  </tr>
+                )}
+                {requests.reverse().map((req, index) => (
+                  <tr key={index} className="hover:bg-gray-800">
+                    <td className="p-3 border-b border-gray-700">{req.id}</td>
+                    <td className="p-3 border-b border-gray-700">{req.name}</td>
+                    <td className="p-3 border-b border-gray-700">{req.position}</td>
+                    <td className="p-3 border-b border-gray-700">{req.batch}</td>
+                    <td className="p-3 border-b border-gray-700">
+                      {new Date(req.booking_date).toLocaleDateString()}
+                    </td>
+                    <td className="p-3 border-b border-gray-700">
+                      {req.start_time} - {req.end_time}
+                    </td>
+                    <td className="p-3 border-b border-gray-700">{req.room}</td>
+                    <td className="p-3 border-b border-gray-700">
+                      {req.specificRequest || "N/A"}
+                    </td>
+                    <td className="p-3 border-b border-gray-700 capitalize">
+                      {req.status}
+                    </td>
+                    <td className="p-3 border-b border-gray-700">
+                      {req.status === "pending" ? (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => approveRequest(req.id)}
+                            className="bg-green-600 text-white px-3 py-1 rounded-md hover:bg-green-700">
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleRejectClick(req.id)}
+                            className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700">
+                            Reject
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">Processed</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+
+
+
+            {
+              isRejectOpen && (
+                <Description
+                  isOpen={isRejectOpen}
+                  onClose={() => setIsRejectOpen(false)}
+                  onSubmit={rejectRequest}
+                  type="Rejection"
+                />
+              )
+            }
+          </div>
+
+        </div>
+
+
       </div>
-
-      <h1 className="text-2xl font-bold">Admin Panel</h1>
-      {errorMessage && <p className="text-red-600">{errorMessage}</p>} {/* Display error message */}
-
-      <table className="w-full border-collapse border border-gray-300 mt-4">
-        <thead>
-          <tr className="bg-gray-200">
-            <th className="border border-gray-300 p-2">Name</th>
-            <th className="border border-gray-300 p-2">Position</th>
-            <th className="border border-gray-300 p-2">Batch</th>
-            <th className="border border-gray-300 p-2">Date</th>
-            <th className="border border-gray-300 p-2">Time</th>
-            <th className="border border-gray-300 p-2">Room</th>
-            <th className="border border-gray-300 p-2">Status</th>
-            <th className="border border-gray-300 p-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {requests.map((req) => (
-            <tr key={req.id} className="border border-gray-300">
-              <td className="border border-gray-300 p-2">{req.name}</td>
-              <td className="border border-gray-300 p-2">{req.position}</td>
-              <td className="border border-gray-300 p-2">{req.batch}</td>
-              <td className="border border-gray-300 p-2">{req.booking_date}</td>
-              <td className="border border-gray-300 p-2">{`${req.start_time} - ${req.end_time}`}</td>
-              <td className="border border-gray-300 p-2">{req.room}</td>
-              <td className={`border border-gray-300 p-2 ${req.status === "Approved" ? "text-green-600" : "text-red-600"}`}>
-                {req.status}
-              </td>
-              <td className="border border-gray-300 p-2 flex gap-2">
-                <button onClick={() => handleAction(req.id, "Approved")} className="bg-green-500 text-white px-2 py-1 rounded-lg">
-                  Approve
-                </button>
-                <button onClick={() => handleAction(req.id, "Declined")} className="bg-red-500 text-white px-2 py-1 rounded-lg">
-                  Decline
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
-  );
+  )
 }
+
+export default page
