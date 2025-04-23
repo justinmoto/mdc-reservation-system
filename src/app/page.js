@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mail, User } from "lucide-react";
 import { useMemo } from "react";
+import IsUserBanned from "@/components/IsUserBanned";
 
 export default function Home() {
   const router = useRouter();
@@ -45,10 +46,15 @@ export default function Home() {
 
   useEffect(() => {
     const userToken = localStorage.getItem("userToken");
+
+    if(!userToken) {
+      return;
+    }
+    
     if (userToken) {
       fetch("http://localhost:5000/api/user", {
         headers: {
-          Authorization: `Bearer ${userToken}`,
+          Authorization: "Bearer " + userToken,
         },
       })
         .then((res) => res.json())
@@ -56,10 +62,11 @@ export default function Home() {
           setAccounts(data);
         })
         .catch((error) => {
-          console.error("Error fetching accounts:", error);
+          console.log("Error fetching accounts:", error);
         });
     }
   }, []);
+
 
 
   console.log(accounts)
@@ -293,6 +300,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen p-6 font-poppins bg-gray-100">
+
+     <IsUserBanned/>
+
       <header className="flex justify-between items-center bg-blue-800 text-white p-4 rounded-lg">
         <h1 className="text-lg font-bold">MDC Reservation for Facilities</h1>
         <div className="flex gap-2 ml-50">

@@ -2,7 +2,7 @@
 import Description from '@/components/Description';
 import React, { useEffect, useState } from 'react'
 
-const page = () => {
+const Page = () => {
     const [errorLogs, setErrorLogs] = useState('');
     const [accounts, setAccounts] = useState([]);
     const [requests, setRequests] = useState([]);
@@ -425,4 +425,4 @@ const page = () => {
     )
 }
 
-export default page
+export default Page
