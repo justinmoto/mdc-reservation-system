@@ -13,18 +13,16 @@ app.use(bodyParser.json());
 
 
 const db = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "loesloes2003",
-  database: "my_database",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
  
 console.log("DB_HOST:", process.env.DB_HOST);
 console.log("DB_USER:", process.env.DB_USER);
 console.log("DB_NAME:", process.env.DB_NAME);
-
-
 
 app.get("/", (req, res) => {
   res.send("Hello from the server!");
